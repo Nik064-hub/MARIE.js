@@ -23,3 +23,6 @@
 # Shell launchers must stay LF to run on Linux and macOS
 *.sh text eol=lf
 *.command text eol=lf
+
+# Windows batch launcher must keep CRLF even when downloaded as a ZIP
+*.cmd text eol=crlf
