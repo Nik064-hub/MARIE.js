@@ -19,3 +19,7 @@
 
 # MARIE assembly files must stay LF: the assembler rejects CRLF
 *.mas text eol=lf
+
+# Shell launchers must stay LF to run on Linux and macOS
+*.sh text eol=lf
+*.command text eol=lf
