@@ -1,0 +1,19 @@
+/ Enable Extended Hardware Mode. Hold physical D before Run.
+/ Outputs: selected state, event type, physical code, count, count after ACK.
+Load KeyD
+Store 0EFA
+Load 0EFB
+Output
+Load 0EFC
+Output
+Load 0EFF
+Output
+Load 0EFD
+Output
+Load One
+Store 0EF8
+Load 0EFD
+Output
+Halt
+KeyD, DEC 7
+One, DEC 1

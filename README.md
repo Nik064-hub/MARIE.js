@@ -47,3 +47,17 @@ npm run build
 MARIE.js is open-source software distributed under the [MIT License](https://opensource.org/license/mit).
 
 See the [LICENSE](LICENSE) file for details.
+
+## Extensión local: juegos y periféricos en tiempo real
+
+Esta copia incorpora **Input asíncrono** y **Extended Hardware Mode**, ambos opcionales. Los programas clásicos conservan su memoria e instrucciones originales. La lógica de los juegos sigue escribiéndose en ensamblador MARIE; la extensión no añade opcodes.
+
+En el panel **Inputs**, selecciona **Input asíncrono** para consultar teclas sin detener la CPU. Activa **Extended Hardware Mode** para utilizar el teclado físico por MMIO y el temporizador. Enfoca la zona de captura para enviar teclas al programa; el teclado virtual permite también mantener varias teclas enclavadas. El display original sigue siendo de 16 × 16.
+
+- [Manual de periféricos, mapa MMIO, temporizador y desarrollo de juegos](docs/extended-hardware.md)
+- [Tabla completa de códigos lógicos y posiciones físicas USB HID](docs/keyboard-codes.md)
+- [Programas ensamblador de diagnóstico](public/diagnostics/)
+
+En la instalación Windows de este espacio de trabajo puedes usar `..\iniciar-marie.cmd`. Desde la carpeta raíz `ProyectoOrganizacion`, los comandos ` .\npm-local.cmd run dev`, `.\npm-local.cmd run test -- --run`, `.\npm-local.cmd run check` y `.\npm-local.cmd run build` utilizan las herramientas locales. En otras instalaciones con Node.js compatible con Vite 7, utiliza los comandos npm estándar de la sección Development.
+
+Se mantienen los créditos y la licencia MIT originales. Esta extensión local no es una publicación oficial del proyecto MARIE.js.

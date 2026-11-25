@@ -1,14 +1,10 @@
 <script lang="ts" module>
-	export type InputItem = {
-		format: InputOutputMode;
-		consumed: string;
-		queued: string;
-	};
+	export type { InputItem } from '../project';
 </script>
 
 <script lang="ts">
 	import Fa from 'svelte-fa';
-	import type { InputOutputMode } from '../settings';
+	import type { InputItem } from '../project';
 	import { faPlus, faTrash } from '@fortawesome/free-solid-svg-icons';
 
 	let { inputs = $bindable() }: { inputs: InputItem[] } = $props();
@@ -18,7 +14,7 @@
 		inputTextareas.filter((x) => x) as HTMLTextAreaElement[],
 	);
 	export function focus() {
-		inputTextareaElements[inputTextareaElements.length - 1].focus();
+		inputTextareaElements[inputTextareaElements.length - 1]?.focus();
 	}
 
 	let unconsumed = $derived(
@@ -60,7 +56,12 @@
 						{#if item.consumed !== ''}
 							<div class="previous">{item.consumed}</div>
 						{/if}
-						{#if i >= unconsumed}
+						{#if item.format === 'async'}
+							<p class="is-size-7">
+								Teclado en Hardware extendido. Sin tecla: −1. Las colas de texto
+								se conservan.
+							</p>
+						{:else if i >= unconsumed}
 							<textarea
 								class="textarea"
 								bind:this={inputTextareas[i]}
@@ -86,6 +87,7 @@
 								<option value="oct">Octal</option>
 								<option value="bin">Binary</option>
 								<option value="unicode">Unicode (UTF-16BE)</option>
+								<option value="async">Input asíncrono</option>
 							</select>
 						</div>
 					</td>

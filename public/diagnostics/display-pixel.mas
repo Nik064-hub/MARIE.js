@@ -1,0 +1,5 @@
+/ Works in classic and extended modes. First pixel becomes white.
+Load White
+Store 0F00
+Halt
+White, HEX 7FFF

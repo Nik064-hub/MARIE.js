@@ -1,0 +1,4 @@
+/ Select Input asincrono before running. Empty FIFO outputs FFFF.
+Input
+Output
+Halt

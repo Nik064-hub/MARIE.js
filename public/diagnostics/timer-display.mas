@@ -1,0 +1,5 @@
+/ Enable Extended Hardware Mode. Pause manually to stop.
+/ Copies ticks into the original display without using INPUT.
+Loop, Load 0EFE
+Store 0F00
+Jump Loop

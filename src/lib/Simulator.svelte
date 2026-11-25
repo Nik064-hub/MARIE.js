@@ -21,6 +21,7 @@
 		faPlay,
 	} from '@fortawesome/free-solid-svg-icons';
 	import Fa from 'svelte-fa';
+	import { untrack } from 'svelte';
 
 	let {
 		sim,
@@ -58,9 +59,10 @@
 
 	let error = $state(false);
 	let program = $state<AssembledProgram | null>(null);
-	let machineState = $state(sim.state());
+	let machineState = $state(untrack(() => sim.state()));
 	let log = $state<Action[]>([]);
 	let running = $state(false);
+	let executionId = 0;
 	let hasBeenRun = $state(false);
 	let fastMode = $state(false);
 	let lockFastMode = $state(false);
@@ -68,9 +70,10 @@
 	let canStepBack = $derived(log.length > 0);
 	$effect(() => {
 		sim.enableLog = !fastMode;
+		untrack(forceUpdateState);
 	});
 
-	function forceUpdateState() {
+	export function forceUpdateState() {
 		machineState = sim.state();
 		log = [...sim.log];
 		onUpdate(machineState, log);
@@ -78,6 +81,8 @@
 	const updateState = throttle(forceUpdateState, 50);
 
 	function assembleCode() {
+		executionId++;
+		sim.hardware.setRunning(false);
 		lockFastMode = false;
 		running = false;
 		error = false;
@@ -112,6 +117,7 @@
 		}
 		if (breakpoints[line]) {
 			running = false;
+			sim.hardware.setRunning(false);
 			forceUpdateState();
 			onBreak(line);
 		}
@@ -136,10 +142,12 @@
 			return;
 		}
 		lockFastMode = true;
+		const session = ++executionId;
 		running = true;
+		sim.hardware.setRunning(true);
 		hasBeenRun = true;
 		onAction('run');
-		while (running) {
+		while (running && session === executionId) {
 			const start = performance.now();
 			for (
 				let i = 0;
@@ -149,27 +157,28 @@
 				await doRunStep();
 			}
 			updateState();
+			if (!running || session !== executionId) break;
 			await new Promise((resolve) => {
 				setTimeout(() => resolve(null), speedSetting.delay);
 			});
 		}
+		if (session !== executionId) return;
 		running = false;
+		sim.hardware.setRunning(false);
 	}
 
 	async function runFast() {
 		lockFastMode = true;
+		const session = ++executionId;
 		running = true;
+		sim.hardware.setRunning(true);
 		hasBeenRun = true;
 		onAction('run');
-		while (running) {
-			const actions = [];
+		while (running && session === executionId) {
 			const start = performance.now();
-			while (performance.now() - start < 200) {
-				for (let i = 0; i < 100000; i++) {
-					actions.push(await sim.microStep());
-				}
-			}
-			for (const action of actions) {
+			// Measured old blocks exceeded 200ms; yield within one display frame.
+			while (running && performance.now() - start < 8) {
+				const action = await sim.microStep();
 				if (action?.type === 'output') {
 					onOutput(0, action.value);
 				} else if (action?.type === 'halt' && action.halt) {
@@ -182,7 +191,9 @@
 				setTimeout(() => resolve(null), 0);
 			});
 		}
+		if (session !== executionId) return;
 		running = false;
+		sim.hardware.setRunning(false);
 	}
 
 	async function doRunStep() {
@@ -201,11 +212,23 @@
 	}
 
 	export function pause(reason?: string) {
+		executionId++;
 		onPause(reason);
 		running = false;
+		sim.hardware.setRunning(false);
+	}
+
+	export function invalidate() {
+		pause();
+		program = null;
+		error = false;
+		hasBeenRun = false;
+		lockFastMode = false;
+		forceUpdateState();
 	}
 
 	async function step() {
+		sim.hardware.setRunning(false);
 		running = true;
 		while (running) {
 			const result = await doMicroStep();
@@ -219,6 +242,7 @@
 	}
 
 	async function microStep() {
+		sim.hardware.setRunning(false);
 		running = true;
 		while (running) {
 			const result = await doMicroStep();
@@ -263,6 +287,7 @@
 	}
 
 	function restart() {
+		executionId++;
 		lockFastMode = false;
 		running = false;
 		hasBeenRun = false;
@@ -365,7 +390,7 @@
 				class="button"
 				title="Step back to previous micro instruction"
 				onclick={microStepBack}
-				disabled={!canStepBack}
+				disabled={running || !canStepBack}
 			>
 				<span class="icon">
 					<Fa icon={faCaretLeft} />

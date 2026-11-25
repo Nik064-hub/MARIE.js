@@ -1,3 +1,10 @@
+import {
+	ExtendedHardware,
+	MMIO_START,
+	MMIO_END,
+	type HardwareSnapshot,
+} from './peripherals';
+
 /**
  * An assembled program to be loaded into the MARIE simulator.
  */
@@ -219,6 +226,8 @@ enum InputInterruptState {
  * Th MARIE simulator.
  */
 export class MarieSim {
+	readonly hardware = new ExtendedHardware();
+	private hardwareUndo?: HardwareSnapshot;
 	/**
 	 * The memory
 	 */
@@ -258,7 +267,17 @@ export class MarieSim {
 	}
 
 	/** Whether to produce an action log to allow stepping backwards */
-	enableLog: boolean;
+	private _enableLog = true;
+	get enableLog() {
+		return this._enableLog;
+	}
+	set enableLog(value: boolean) {
+		if (value === this._enableLog) return;
+		this._enableLog = value;
+		// Old actions cannot undo CPU state produced without a matching log.
+		this._log = [];
+		this.hardwareUndo = undefined;
+	}
 
 	private _origin: number;
 	private _memory: number[];
@@ -267,6 +286,7 @@ export class MarieSim {
 	private _log: (Action & {
 		microStepCounter: number;
 		inputInterrupt: InputInterruptState;
+		hardwareBefore?: HardwareSnapshot;
 	})[];
 	private _inputInterrupt: InputInterruptState;
 	private _microProgramCounter: number;
@@ -324,6 +344,12 @@ export class MarieSim {
 		});
 
 		this.memory = new Proxy(this._memory, {
+			get(m, i, r) {
+				if (typeof i === 'string' && /^\d+$/.test(i)) {
+					return sim.hardware.read(Number(i)) ?? Reflect.get(m, i, r);
+				}
+				return Reflect.get(m, i, r);
+			},
 			set(m, i, v, r) {
 				const address = Number(i);
 				const value = Number(v);
@@ -332,15 +358,29 @@ export class MarieSim {
 				}
 				const addr = address & 0xfff;
 				const newValue = value & 0xffff;
+				const oldContents = sim.readAddress(addr);
+				sim.writeAddress(addr, newValue);
 				sim.addLog({
 					type: 'memset',
 					address,
-					oldContents: m[addr],
+					oldContents,
 					newContents: newValue,
 				});
-				return Reflect.set(m, addr, newValue, r);
+				return true;
 			},
 		});
+	}
+
+	/** Changing device configuration starts a new reversible execution epoch. */
+	configureHardware(enabled: boolean, asyncInput: boolean) {
+		if (
+			this.hardware.enabled === enabled &&
+			this.hardware.asyncInput === asyncInput
+		)
+			return;
+		this.hardware.configure(enabled, asyncInput);
+		this._log = [];
+		this.hardwareUndo = undefined;
 	}
 
 	/**
@@ -382,6 +422,8 @@ export class MarieSim {
 	 * Does not clear memory.
 	 */
 	resetRegisters() {
+		this.hardware.reset();
+		this.hardwareUndo = undefined;
 		this._registers.AC = 0;
 		this._registers.IN = 0;
 		this._registers.IR = 0;
@@ -447,6 +489,7 @@ export class MarieSim {
 	stepBack() {
 		while (
 			this.microStepBack() &&
+			this._log.length > 0 &&
 			this._log[this._log.length - 1].type !== 'step'
 		);
 		return this.microStepBack();
@@ -458,12 +501,17 @@ export class MarieSim {
 	 * @returns The action performed (if any)
 	 */
 	async microStep(): Promise<Action | null> {
+		this.hardware.beginForward();
 		if (this._halted) {
 			return null;
 		}
 
 		if (this._inputInterrupt == InputInterruptState.NeedsValue) {
-			const callbackValue = await this._inputCallback();
+			if (this.hardware.asyncInput && this.enableLog)
+				this.hardwareUndo = this.hardware.snapshot();
+			const callbackValue = this.hardware.asyncInput
+				? this.hardware.input()
+				: await this._inputCallback();
 			if (
 				callbackValue === null ||
 				callbackValue === undefined ||
@@ -531,6 +579,7 @@ export class MarieSim {
 	 * @returns The action which was undone, if any
 	 * */
 	microStepBack(): Action | null {
+		this.hardware.beginRewind();
 		let last = this._log.pop();
 		if (!last) {
 			return null;
@@ -553,10 +602,10 @@ export class MarieSim {
 				this._registers.MBR = last.oldMBR;
 				break;
 			case 'memwrite':
-				this._memory[last.address] = last.oldContents;
+				if (!last.hardwareBefore) this._memory[last.address] = last.oldContents;
 				break;
 			case 'memset':
-				this._memory[last.address] = last.oldContents;
+				if (!last.hardwareBefore) this._memory[last.address] = last.oldContents;
 				break;
 			case 'regtransfer':
 				this._registers[last.target] = last.oldTargetValue;
@@ -577,6 +626,7 @@ export class MarieSim {
 		}
 		this._microProgramCounter = last.microStepCounter;
 		this._inputInterrupt = last.inputInterrupt;
+		if (last.hardwareBefore) this.hardware.restore(last.hardwareBefore);
 		return last;
 	}
 
@@ -584,8 +634,13 @@ export class MarieSim {
 	 * Get a copy of the simulator's current state
 	 */
 	state(): State {
+		const memory = [...this._memory];
+		if (this.hardware.enabled) {
+			for (let address = MMIO_START; address <= MMIO_END; address++)
+				memory[address] = this.hardware.read(address)!;
+		}
 		return {
-			memory: [...this._memory],
+			memory,
 			registers: Object.assign({}, this._registers),
 			halted: this._halted,
 		};
@@ -608,7 +663,9 @@ export class MarieSim {
 	 */
 	private readMemory(): Action {
 		const oldTargetValue = this._registers.MBR;
-		this._registers.MBR = this.memory[this._registers.MAR];
+		const address = this._registers.MAR & 0xfff;
+		this.captureHardware(address);
+		this._registers.MBR = this.readAddress(address);
 		this._registers.PC &= 0xfff;
 		this._registers.MAR &= 0xfff;
 		return {
@@ -622,13 +679,33 @@ export class MarieSim {
 	 * Write the contents of the MBR register into M[MAR]
 	 */
 	private writeMemory(): Action {
-		const oldContents = this.memory[this._registers.MAR];
-		this._memory[this._registers.MAR] = this._registers.MBR;
+		const oldContents = this.readAddress(this._registers.MAR);
+		this.writeAddress(this._registers.MAR, this._registers.MBR);
 		return {
 			type: 'memwrite',
 			address: this._registers.MAR,
 			oldContents,
 		};
+	}
+
+	private readAddress(address: number): number {
+		return this.hardware.read(address) ?? this._memory[address];
+	}
+
+	private captureHardware(address: number) {
+		if (
+			this.enableLog &&
+			this.hardware.enabled &&
+			address >= MMIO_START &&
+			address <= MMIO_END
+		) {
+			this.hardwareUndo = this.hardware.snapshot();
+		}
+	}
+
+	private writeAddress(address: number, value: number) {
+		this.captureHardware(address);
+		if (!this.hardware.write(address, value)) this._memory[address] = value;
 	}
 
 	/**
@@ -739,13 +816,16 @@ export class MarieSim {
 	 * Add to the replay log
 	 */
 	private addLog(action: Action) {
+		if (action.type === 'halt' && action.halt) this.hardware.setRunning(false);
 		if (this.enableLog) {
 			this._log.push({
 				...action,
 				microStepCounter: this._microProgramCounter,
 				inputInterrupt: this._inputInterrupt,
+				hardwareBefore: this.hardwareUndo,
 			});
 		}
+		this.hardwareUndo = undefined;
 	}
 
 	/** The MARIE instruction set */

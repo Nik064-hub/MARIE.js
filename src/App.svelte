@@ -14,10 +14,11 @@
 	import CollapsiblePanel from './lib/CollapsiblePanel.svelte';
 	import OutputLog from './lib/OutputLog.svelte';
 	import WatchList from './lib/WatchList.svelte';
-	import Display from './lib/Display.svelte';
+	import DisplayWindow from './lib/DisplayWindow.svelte';
 	import InputsPanel from './lib/InputsPanel.svelte';
+	import HardwarePanel from './lib/HardwarePanel.svelte';
 	import Simulator from './lib/Simulator.svelte';
-	import { onMount, tick } from 'svelte';
+	import { onMount, tick, untrack } from 'svelte';
 	import {
 		saveProject,
 		restoreProject,
@@ -77,6 +78,43 @@
 	let menuActive = $state(false);
 	let showInstructions = $state(false);
 	let busyState = $state(0);
+	let hardwarePanelOpen = $state(true);
+	let asyncInput = $derived(
+		project.inputs.some((input) => input.format === 'async'),
+	);
+	let previousProjectId: string | undefined;
+	$effect(() => {
+		const id = projectId;
+		const enabled = !!project.extendedHardware;
+		const asynchronous = asyncInput;
+		untrack(() => {
+			simulator?.pause();
+			if (previousProjectId !== id) {
+				simulator?.invalidate();
+				sim.resetRegisters();
+				program = null;
+				codeModified = true;
+				inputLogIndices = [];
+				outputActions = [];
+				previousProjectId = id;
+			}
+			sim.configureHardware(enabled, asynchronous);
+			sim.hardware.period = project.timerPeriod ?? 300;
+			inputLogIndices = [];
+			oldLogLength = sim.log.length;
+			log = [...sim.log];
+			machineState = sim.state();
+			simulator?.forceUpdateState();
+		});
+	});
+
+	function setTimerPeriod(value: number) {
+		simulator?.pause();
+		project.timerPeriod = value;
+		// The debugger's memory proxy records a reversible device write.
+		if (simulator) simulator.editMemory(0xef7, value);
+		else sim.memory[0xef7] = value;
+	}
 
 	let pcLine = $derived(program?.sourceMap[machineState.registers.PC]);
 	let marLine = $derived(program?.sourceMap[machineState.registers.MAR]);
@@ -289,6 +327,7 @@
 	}
 
 	function reset() {
+		sim.hardware.reset();
 		for (const input of project.inputs) {
 			if (input.format === 'unicode') {
 				input.queued = `${input.consumed}${input.queued}`;
@@ -643,6 +682,14 @@
 							</span>
 							<span>Instruction Set</span>
 						</button>
+						<button
+							class="button"
+							class:is-info={$settings.displayOpen}
+							aria-pressed={$settings.displayOpen}
+							onclick={() => ($settings.displayOpen = !$settings.displayOpen)}
+						>
+							<span>Display</span>
+						</button>
 
 						<button class="button" onclick={toggleTheme} title={`Switch theme`}>
 							<span class="icon">
@@ -798,8 +845,17 @@
 					>
 						<InputsPanel bind:this={inputsPanel} bind:inputs={project.inputs} />
 					</CollapsiblePanel>
-					<CollapsiblePanel title="Display" bind:open={$settings.displayOpen}>
-						<Display memory={machineState.memory} />
+					<CollapsiblePanel
+						title="Hardware extendido"
+						bind:open={hardwarePanelOpen}
+					>
+						<HardwarePanel
+							hardware={sim.hardware}
+							enabled={!!project.extendedHardware}
+							active={!!project.extendedHardware || asyncInput}
+							onEnabled={(value) => (project.extendedHardware = value)}
+							onPeriod={setTimerPeriod}
+						/>
 					</CollapsiblePanel>
 				</div>
 			</div>
@@ -812,6 +868,10 @@
 			panelB={outputPanels}
 		></SplitPanel>
 	</div>
+	<DisplayWindow
+		memory={machineState.memory}
+		bind:open={$settings.displayOpen}
+	/>
 	<Recent
 		active={recentOpen}
 		currentKey={projectId}

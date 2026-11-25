@@ -1,7 +1,7 @@
 import type { InputOutputMode } from './settings';
 
 export type InputItem = {
-	format: InputOutputMode;
+	format: InputOutputMode | 'async';
 	consumed: string;
 	queued: string;
 };
@@ -18,6 +18,8 @@ export interface Project {
 	pointers: Pointers;
 	inputs: InputItem[];
 	outputMode: InputOutputMode;
+	extendedHardware?: boolean;
+	timerPeriod?: number;
 }
 export type ProjectWithMeta = Project & { _timestamp: number };
 
