@@ -1,13 +1,7 @@
-import { createRequire } from 'node:module';
 import assert from 'node:assert/strict';
+import { launchBrowser } from './launch-browser.mjs';
 
-// Use the already installed runtime's Playwright; no dependency added to MARIE.
-const runtimeRequire = createRequire(
-	process.env.PLAYWRIGHT_PACKAGE_JSON ??
-		'C:/Users/sfrei/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/package.json',
-);
-const { chromium } = runtimeRequire('playwright');
-const browser = await chromium.launch({ channel: 'msedge', headless: true });
+const browser = await launchBrowser();
 try {
 	const page = await browser.newPage({
 		viewport: { width: 1440, height: 1050 },
