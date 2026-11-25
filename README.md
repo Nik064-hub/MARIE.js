@@ -58,6 +58,6 @@ En el panel **Inputs**, selecciona **Input asíncrono** para consultar teclas si
 - [Tabla completa de códigos lógicos y posiciones físicas USB HID](docs/keyboard-codes.md)
 - [Programas ensamblador de diagnóstico](public/diagnostics/)
 
-En la instalación Windows de este espacio de trabajo puedes usar `..\iniciar-marie.cmd`. Desde la carpeta raíz `ProyectoOrganizacion`, los comandos ` .\npm-local.cmd run dev`, `.\npm-local.cmd run test -- --run`, `.\npm-local.cmd run check` y `.\npm-local.cmd run build` utilizan las herramientas locales. En otras instalaciones con Node.js compatible con Vite 7, utiliza los comandos npm estándar de la sección Development.
+Para iniciar el simulador, haz doble clic en `iniciar-marie.cmd` (Windows), `iniciar-marie.command` (macOS) o ejecuta `./iniciar-marie.sh` (Linux/macOS); requieren Node.js compatible con Vite 7 y abren http://127.0.0.1:5173. También puedes usar los comandos npm estándar de la sección Development.
 
 Se mantienen los créditos y la licencia MIT originales. Esta extensión local no es una publicación oficial del proyecto MARIE.js.

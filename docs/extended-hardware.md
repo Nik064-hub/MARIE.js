@@ -2,16 +2,16 @@
 
 ## Iniciar y elegir modo
 
-En este equipo, abre `iniciar-marie.cmd` desde la carpeta `ProyectoOrganizacion` y visita http://127.0.0.1:5173. Mantén abierta la consola; Ctrl+C detiene el servidor. Los archivos del simulador están en `MARIE.js/src`.
+Abre `iniciar-marie.cmd` (Windows), `iniciar-marie.command` (macOS) o ejecuta `./iniciar-marie.sh` (Linux/macOS) y visita http://127.0.0.1:5173. Mantén abierta la consola; Ctrl+C detiene el servidor. Los archivos del simulador están en `src/`.
 
-Desde PowerShell en `ProyectoOrganizacion`:
+O bien, desde la carpeta del repositorio:
 
-```powershell
-.\npm-local.cmd ci --cache ../.tools/npm-cache
-.\npm-local.cmd run dev -- --host 127.0.0.1
-.\npm-local.cmd run test -- --run
-.\npm-local.cmd run check
-.\npm-local.cmd run build
+```bash
+npm ci
+npm run dev -- --host 127.0.0.1
+npm run test -- --run
+npm run check
+npm run build
 ```
 
 `ci` es necesario para instalar o reinstalar las dependencias; no hace falta repetirlo al iniciar. El lanzador utiliza la instalación local de npm y la ruta de Node.js de este equipo. En otro equipo instala Node.js compatible con Vite 7 y usa `npm ci`, `npm run dev`, etc. Se necesita el servidor de desarrollo o un servidor de archivos para `dist`, no abrir `index.html` con `file://`.
@@ -134,7 +134,7 @@ Al activar o desactivar el registro de acciones se descarta el historial previo:
 
 ## Validación en navegador
 
-Además de la suite Vitest, `node tests/browser-hardware.mjs` ejecuta Edge sin ventana contra el servidor local en el puerto 5173. En este equipo reutiliza Playwright del runtime de Codex sin añadir dependencias al proyecto. En otro entorno, configura `PLAYWRIGHT_PACKAGE_JSON` con la ruta absoluta del package.json de un paquete que tenga Playwright instalado; también se necesita Edge disponible mediante el canal msedge.
+Además de la suite Vitest, `npm run test:browser` ejecuta `tests/browser-display.mjs` y `tests/browser-hardware.mjs` con un navegador sin ventana contra el servidor local (`npm run dev` en el puerto 5173). Playwright no es una dependencia del proyecto: instálalo (`npm i -D playwright`) o define `PLAYWRIGHT_PACKAGE_JSON` con la ruta de un package.json junto a un node_modules que lo contenga. El navegador por defecto es Edge (`msedge`); cambia el canal con `MARIE_BROWSER_CHANNEL` (por ejemplo `chrome`).
 
 La prueba recorre captura física simulada, foco/editor, estados simultáneos, virtual mantenido/enclavado, entrada clásica, MMIO por CPU y retroceso, pausa/breakpoint, modo rápido y display. Los atajos reales reservados por el sistema, IME y hardware táctil específico requieren comprobación en el dispositivo de destino. El presupuesto de CPU es 8 ms por bloque rápido; la latencia total incluye además el renderizado y la carga del navegador.
 
