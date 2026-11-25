@@ -19,6 +19,19 @@ export interface KeyDefinition {
 
 export const KEY_QUEUE_CAPACITY = 64;
 
+/** USB HID usage IDs of the modifier keys. */
+const LEFT_CTRL = 224;
+const LEFT_SHIFT = 225;
+const LEFT_ALT = 226;
+const LEFT_META = 227;
+const RIGHT_CTRL = 228;
+const RIGHT_SHIFT = 229;
+/** The right Alt key doubles as AltGr on international layouts. */
+const RIGHT_ALT = 230;
+const RIGHT_META = 231;
+/** Named keys without a character reach INPUT as SPECIAL_KEY_BASE + HID id. */
+const SPECIAL_KEY_BASE = 512;
+
 const fixedKeys: [string, number, string, string?][] = [
 	['Enter', 40, 'Enter'],
 	['Escape', 41, 'Escape'],
@@ -172,11 +185,11 @@ export class KeyboardController {
 	}
 	get modifiers(): number {
 		return (
-			(this.down.has(225) || this.down.has(229) ? 1 : 0) |
-			(this.down.has(224) || this.down.has(228) ? 2 : 0) |
-			(this.down.has(226) || this.down.has(230) ? 4 : 0) |
-			(this.down.has(227) || this.down.has(231) ? 8 : 0) |
-			(this.altGraph && this.down.has(230) ? 16 : 0)
+			(this.down.has(LEFT_SHIFT) || this.down.has(RIGHT_SHIFT) ? 1 : 0) |
+			(this.down.has(LEFT_CTRL) || this.down.has(RIGHT_CTRL) ? 2 : 0) |
+			(this.down.has(LEFT_ALT) || this.down.has(RIGHT_ALT) ? 4 : 0) |
+			(this.down.has(LEFT_META) || this.down.has(RIGHT_META) ? 8 : 0) |
+			(this.altGraph && this.down.has(RIGHT_ALT) ? 16 : 0)
 		);
 	}
 	get status(): number {
@@ -199,7 +212,7 @@ export class KeyboardController {
 			return false;
 		this.cached = undefined;
 		this.down.add(definition.id);
-		if (definition.id === 230) {
+		if (definition.id === RIGHT_ALT) {
 			this.altGraph =
 				event.key === 'AltGraph' || !!event.getModifierState?.('AltGraph');
 		}
@@ -220,7 +233,7 @@ export class KeyboardController {
 				if (upper >= 64 && upper <= 95) input = upper & 31;
 			}
 		} else if (input === undefined && specialKeyNames.has(event.key)) {
-			input = 512 + definition.id;
+			input = SPECIAL_KEY_BASE + definition.id;
 		}
 		if (input !== undefined) {
 			if (this.inputQueue.length < KEY_QUEUE_CAPACITY)
@@ -234,7 +247,7 @@ export class KeyboardController {
 		const definition = byCode.get(event.code);
 		if (!definition || !this.down.delete(definition.id)) return false;
 		this.cached = undefined;
-		if (definition.id === 230) this.altGraph = false;
+		if (definition.id === RIGHT_ALT) this.altGraph = false;
 		this.released.add(definition.id);
 		this.pushEvent({ code: definition.id, type: 2 });
 		return true;

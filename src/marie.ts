@@ -227,6 +227,12 @@ enum InputInterruptState {
  */
 export class MarieSim {
 	readonly hardware = new ExtendedHardware();
+	/**
+	 * Device state captured just before an instruction step that touches MMIO or
+	 * consumes INPUT (see captureHardware). The next addLog() stores it in that
+	 * log entry as hardwareBefore, so stepping back can restore the devices, and
+	 * then clears it. It is never kept across log entries.
+	 */
 	private hardwareUndo?: HardwareSnapshot;
 	/**
 	 * The memory

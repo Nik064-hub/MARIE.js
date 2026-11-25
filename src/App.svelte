@@ -17,6 +17,7 @@
 	import DisplayWindow from './lib/DisplayWindow.svelte';
 	import InputsPanel from './lib/InputsPanel.svelte';
 	import HardwarePanel from './lib/HardwarePanel.svelte';
+	import { DEFAULT_TIMER_PERIOD } from './peripherals';
 	import Simulator from './lib/Simulator.svelte';
 	import { onMount, tick, untrack } from 'svelte';
 	import {
@@ -99,7 +100,7 @@
 				previousProjectId = id;
 			}
 			sim.configureHardware(enabled, asynchronous);
-			sim.hardware.period = project.timerPeriod ?? 300;
+			sim.hardware.period = project.timerPeriod ?? DEFAULT_TIMER_PERIOD;
 			inputLogIndices = [];
 			oldLogLength = sim.log.length;
 			log = [...sim.log];

@@ -1,6 +1,11 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import type { ExtendedHardware } from '../peripherals';
+	import {
+		DEFAULT_TIMER_PERIOD,
+		MAX_TIMER_PERIOD,
+		MIN_TIMER_PERIOD,
+		type ExtendedHardware,
+	} from '../peripherals';
 	import {
 		keyDefinitions,
 		type KeyDefinition,
@@ -31,7 +36,7 @@
 	let status = $state(0);
 	let modifiers = $state(0);
 	let ticks = $state(0);
-	let currentPeriod = $state(300);
+	let currentPeriod = $state(DEFAULT_TIMER_PERIOD);
 	let timerRunning = $state(false);
 	let rewinding = $state(false);
 	let hold = $state(false);
@@ -223,14 +228,17 @@
 					<input
 						class="input is-small"
 						type="number"
-						min="1"
-						max="65535"
+						min={MIN_TIMER_PERIOD}
+						max={MAX_TIMER_PERIOD}
 						value={currentPeriod}
 						aria-label="Periodo del temporizador"
 						onchange={(e) => {
 							const n = e.currentTarget.valueAsNumber;
 							if (Number.isFinite(n))
-								onPeriod(Math.max(1, Math.min(65535, Math.floor(n))));
+								onPeriod(Math.max(
+										MIN_TIMER_PERIOD,
+										Math.min(MAX_TIMER_PERIOD, Math.floor(n)),
+									));
 						}}
 					/>
 				</label>

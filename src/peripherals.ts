@@ -1,7 +1,32 @@
 import { KeyboardController } from './keyboard';
 
-export const MMIO_START = 0xef7;
-export const MMIO_END = 0xeff;
+/** Memory-mapped registers of the optional hardware (see docs/extended-hardware.md). */
+export const MMIO = {
+	/** Timer period in ms (read/write). */
+	PERIOD: 0xef7,
+	/** Keyboard acknowledge (write only): 1 pops one event, 2 clears overflow, 4 clears the release latch. */
+	ACK: 0xef8,
+	/** Keyboard status flags in the low byte, modifier bits in the high byte. */
+	STATUS: 0xef9,
+	/** USB HID code of the key observed through SELECTED_STATE (read/write). */
+	SELECT: 0xefa,
+	/** Bit 0: selected key is held; bit 1: it was released since the last ACK 4. */
+	SELECTED_STATE: 0xefb,
+	/** Type of the oldest pending physical event: 1 key down, 2 key up, 0 none. */
+	EVENT_TYPE: 0xefc,
+	/** Number of pending physical events. */
+	EVENT_COUNT: 0xefd,
+	/** Timer ticks, wrapping at 65536 (read/write). */
+	COUNT: 0xefe,
+	/** USB HID code of the oldest pending physical event, 0 if none. */
+	EVENT_CODE: 0xeff,
+} as const;
+export const MMIO_START = MMIO.PERIOD;
+export const MMIO_END = MMIO.EVENT_CODE;
+
+export const DEFAULT_TIMER_PERIOD = 300;
+export const MIN_TIMER_PERIOD = 1;
+export const MAX_TIMER_PERIOD = 65535;
 
 export type HardwareSnapshot = {
 	keyboard: ReturnType<KeyboardController['snapshot']>;
@@ -15,7 +40,7 @@ export class ExtendedHardware {
 	readonly keyboard = new KeyboardController();
 	enabled = false;
 	asyncInput = false;
-	private _period = 300;
+	private _period = DEFAULT_TIMER_PERIOD;
 	private _count = 0;
 	private phase = 0;
 	private sampledAt = 0;
@@ -36,7 +61,10 @@ export class ExtendedHardware {
 	set period(value: number) {
 		if (!Number.isFinite(value)) return;
 		this.settle();
-		this._period = Math.max(1, Math.min(65535, Math.floor(value)));
+		this._period = Math.max(
+			MIN_TIMER_PERIOD,
+			Math.min(MAX_TIMER_PERIOD, Math.floor(value)),
+		);
 		this.phase = 0;
 	}
 	get count() {
@@ -86,23 +114,23 @@ export class ExtendedHardware {
 	read(address: number): number | undefined {
 		if (!this.enabled) return undefined;
 		switch (address) {
-			case 0xef7:
+			case MMIO.PERIOD:
 				return this.period;
-			case 0xef8:
+			case MMIO.ACK:
 				return 0;
-			case 0xef9:
+			case MMIO.STATUS:
 				return this.keyboard.status | (this.keyboard.modifiers << 8);
-			case 0xefa:
+			case MMIO.SELECT:
 				return this.keyboard.select;
-			case 0xefb:
+			case MMIO.SELECTED_STATE:
 				return this.keyboard.selectedState;
-			case 0xefc:
+			case MMIO.EVENT_TYPE:
 				return this.keyboard.events[0]?.type ?? 0;
-			case 0xefd:
+			case MMIO.EVENT_COUNT:
 				return this.keyboard.events.length;
-			case 0xefe:
+			case MMIO.COUNT:
 				return this.count;
-			case 0xeff:
+			case MMIO.EVENT_CODE:
 				return this.keyboard.events[0]?.code ?? 0;
 			default:
 				return undefined;
@@ -114,16 +142,16 @@ export class ExtendedHardware {
 			return false;
 		value &= 0xffff;
 		switch (address) {
-			case 0xef7:
+			case MMIO.PERIOD:
 				this.period = value;
 				break;
-			case 0xef8:
+			case MMIO.ACK:
 				this.keyboard.acknowledge(value);
 				break;
-			case 0xefa:
+			case MMIO.SELECT:
 				this.keyboard.select = value;
 				break;
-			case 0xefe:
+			case MMIO.COUNT:
 				this.settle();
 				this._count = value;
 				this.phase = 0;

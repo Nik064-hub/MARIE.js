@@ -1,6 +1,12 @@
 import { describe, expect, test } from 'vitest';
 import { MarieSim, assemble } from './marie';
-import { ExtendedHardware } from './peripherals';
+import {
+	DEFAULT_TIMER_PERIOD,
+	ExtendedHardware,
+	MMIO,
+	MMIO_END,
+	MMIO_START,
+} from './peripherals';
 
 function program(code: string, input: () => number | null = () => null) {
 	const result = assemble(code);
@@ -331,4 +337,12 @@ describe('rewinding keeps the physical keyboard separate from CPU history', () =
 		expect(sim.hardware.keyboard.pressed).toEqual([]);
 		expect(sim.hardware.keyboard.events).toEqual([]);
 	});
+});
+
+test('documented MMIO addresses and timer default never change', () => {
+	expect(Object.values(MMIO)).toEqual([
+		0xef7, 0xef8, 0xef9, 0xefa, 0xefb, 0xefc, 0xefd, 0xefe, 0xeff,
+	]);
+	expect([MMIO_START, MMIO_END]).toEqual([0xef7, 0xeff]);
+	expect(DEFAULT_TIMER_PERIOD).toBe(300);
 });
