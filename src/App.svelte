@@ -545,6 +545,9 @@
 <main>
 	<nav class="navbar" aria-label="main navigation">
 		<div class="navbar-brand">
+			<span class="navbar-item app-name">
+				<strong>MARIE Async</strong>&nbsp;<small>Extended Hardware Simulator</small>
+			</span>
 			<!-- svelte-ignore a11y_missing_attribute -->
 			<!-- svelte-ignore a11y_interactive_supports_focus -->
 			<!-- svelte-ignore a11y_click_events_have_key_events -->
@@ -847,7 +850,7 @@
 						<InputsPanel bind:this={inputsPanel} bind:inputs={project.inputs} />
 					</CollapsiblePanel>
 					<CollapsiblePanel
-						title="Hardware extendido"
+						title="Extended Hardware"
 						bind:open={hardwarePanelOpen}
 					>
 						<HardwarePanel

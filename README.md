@@ -1,10 +1,10 @@
-# MARIE.js with asynchronous input and extended hardware: installation and start-up guide
+# MARIE Async: installation and start-up guide
 
-A modified copy of [MARIE.js](https://github.com/MARIE-js/MARIE.js), a browser simulator of the **MARIE** architecture (_Machine Architecture that is Really Intuitive and Easy_) from [The Essentials of Computer Organization and Architecture](https://books.google.com.au/books/about/The_Essentials_of_Computer_Organization.html?id=3kQoAwAAQBAJ&redir_esc=y) by Linda Null and Julia Lobur.
+**MARIE Async** (_Extended Hardware Simulator_) is a modified copy of [MARIE.js](https://github.com/MARIE-js/MARIE.js), a browser simulator of the **MARIE** architecture (_Machine Architecture that is Really Intuitive and Easy_) from [The Essentials of Computer Organization and Architecture](https://books.google.com.au/books/about/The_Essentials_of_Computer_Organization.html?id=3kQoAwAAQBAJ&redir_esc=y) by Linda Null and Julia Lobur.
 
-This version keeps everything MARIE.js does and adds optional features for interactive programs such as games: a keyboard that never blocks the CPU, memory-mapped keyboard and timer registers, and a resizable, detachable display.
+MARIE Async keeps everything MARIE.js does and adds optional features for interactive programs such as games: a keyboard that never blocks the CPU, memory-mapped keyboard and timer registers, and a resizable, detachable display.
 
-> **Naming.** The application is still called MARIE.js inside the program. This project is not an official release of MARIE.js.
+> **Naming.** The application is called **MARIE Async** (subtitle _Extended Hardware Simulator_; npm package `marie-async`). The repository keeps the name MARIE.js because it is a fork of the original project, and the name MARIE.js always refers to the original simulator. MARIE Async is not an official release of MARIE.js.
 
 ## Contents
 
@@ -180,7 +180,7 @@ npm run test:browser    # optional browser tests
 - In normal mode the execution history is **unbounded** and can use a lot of memory in long runs at full speed. Fast mode does not store history, so use it for long-running programs and games.
 - Rewinding restores devices but does not replay external key presses, and held keys are not rewound.
 - Performance numbers in [docs/changes.md](docs/changes.md) come from one computer and are not guarantees.
-- Some screen labels of the hardware panel and the code comments are still in Spanish; the guides quote the labels exactly.
+- The code comments are still partly in Spanish; the interface labels are in English.
 - Not tested: all keyboard layouts, IME and touch screens.
 
 ## Upstream attribution

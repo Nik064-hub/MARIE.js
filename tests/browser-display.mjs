@@ -27,7 +27,7 @@ try {
 	assert.equal(await window.locator('.pixel').count(), 256);
 	const initial = await window.boundingBox();
 	const header = await page
-		.getByRole('button', { name: 'Mover Display', exact: true })
+		.getByRole('button', { name: 'Move Display', exact: true })
 		.boundingBox();
 	await page.mouse.move(header.x + 45, header.y + 16);
 	await page.mouse.down();
@@ -37,7 +37,7 @@ try {
 	assert.ok(Math.abs(moved.x - (initial.x - 180)) < 2);
 	assert.ok(Math.abs(moved.y - (initial.y + 80)) < 2);
 	const corner = page.getByRole('button', {
-		name: 'Redimensionar Display se',
+		name: 'Resize Display se',
 		exact: true,
 	});
 	let handle = await corner.boundingBox();
@@ -98,7 +98,7 @@ try {
 	assert.ok(fitted.x >= 0 && fitted.x + fitted.width <= 361);
 	assert.ok(fitted.y >= 0 && fitted.y + fitted.height <= 641);
 	await page
-		.getByRole('button', { name: 'Cerrar Display', exact: true })
+		.getByRole('button', { name: 'Close Display', exact: true })
 		.click();
 	assert.equal(await window.count(), 0);
 	assert.deepEqual(errors, []);

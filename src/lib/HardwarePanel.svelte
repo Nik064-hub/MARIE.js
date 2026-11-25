@@ -173,8 +173,7 @@
 		Extended Hardware Mode
 	</label>
 	<p class="is-size-7 mb-3">
-		MMIO opcional EF7–EFF. Display original F00–FFF. Selecciona Input asíncrono
-		para leer teclas sin detener la CPU.
+		Optional MMIO EF7–EFF. Original display F00–FFF. Select Asynchronous input to read keys without stopping the CPU.
 	</p>
 	{#if active}
 		<button
@@ -190,8 +189,8 @@
 			onkeyup={(e) => physical(e, false)}
 		>
 			{focused
-				? 'Teclado capturando — haz clic fuera para salir'
-				: 'Capturar teclado'}
+				? 'Capturing keyboard — click outside to stop'
+				: 'Capture keyboard'}
 		</button>
 		<p class="is-size-7 mb-2">
 			INPUT: −1 sin tecla; ↑256 ↓257 ←258 →259. Captura limitada a esta zona;
@@ -199,39 +198,38 @@
 		</p>
 		<div class="stats is-size-7" aria-live="off">
 			<span
-				>INPUT pendientes: <b data-testid="input-count">{inputCount}</b></span
+				>Pending INPUT: <b data-testid="input-count">{inputCount}</b></span
 			>
 			<span
-				>Eventos físicos: <b data-testid="event-count">{events.length}</b></span
+				>Physical events: <b data-testid="event-count">{events.length}</b></span
 			>
-			<span>Modificadores: {modifiers}</span>
-			<span>Overflow: {status & 12 ? 'Sí (se descartó el nuevo)' : 'No'}</span>
+			<span>Modifiers: {modifiers}</span>
+			<span>Overflow: {status & 12 ? 'Yes (newest dropped)' : 'No'}</span>
 		</div>
 		<p class="is-size-7 mt-2" data-testid="pressed-keys">
-			Presionadas: {pressed
+			Pressed: {pressed
 				.map((id) => keyDefinitions.find((k) => k.id === id)?.label ?? id)
-				.join(', ') || 'ninguna'}
+				.join(', ') || 'none'}
 		</p>
 		<p class="is-size-7" data-testid="event-preview">
-			Siguiente: {events[0]
+			Next: {events[0]
 				? `${events[0].code} / ${events[0].type === 1 ? 'down' : 'up'}`
-				: 'ninguno'}
+				: 'none'}
 		</p>
 		{#if rewinding}<p class="has-text-warning is-size-7">
-				Historial congelado. Continúa o avanza un paso para aceptar eventos
-				nuevos.
+				History frozen. Continue or take a step to accept new events.
 			</p>{/if}
 		{#if enabled}
 			<div class="timer mt-3">
 				<label class="is-size-7"
-					>Periodo (ms)
+					>Period (ms)
 					<input
 						class="input is-small"
 						type="number"
 						min={MIN_TIMER_PERIOD}
 						max={MAX_TIMER_PERIOD}
 						value={currentPeriod}
-						aria-label="Periodo del temporizador"
+						aria-label="Timer period"
 						onchange={(e) => {
 							const n = e.currentTarget.valueAsNumber;
 							if (Number.isFinite(n))
@@ -244,24 +242,21 @@
 				</label>
 				<span class="is-size-7"
 					>Ticks: <b data-testid="timer-count">{ticks}</b> · {timerRunning
-						? 'En marcha'
-						: 'Congelado'}</span
+						? 'Running'
+						: 'Frozen'}</span
 				>
 			</div>
 		{/if}
 		<button class="button is-small mt-3" onclick={clear}
-			>Limpiar teclado y colas</button
+			>Clear keyboard and queues</button
 		>
 		<details class="mt-3" bind:open={virtualOpen}>
-			<summary>Teclado virtual</summary>
+			<summary>Virtual keyboard</summary>
 			<p class="is-size-7">
-				Símbolos US + caracteres Latin-1 directos. Shift modifica letras y
-				símbolos; Ctrl genera controles ASCII. Los caracteres acentuados usan la
-				posición de su letra base.
+				US symbols + direct Latin-1 characters. Shift changes letters and symbols; Ctrl generates ASCII controls. Accented characters use the position of their base letter.
 			</p>
 			<label class="checkbox is-size-7 my-2"
-				><input type="checkbox" bind:checked={hold} onchange={clear} /> Enclavar teclas
-				(clic mantiene / clic libera)</label
+				><input type="checkbox" bind:checked={hold} onchange={clear} /> Latch keys (click holds / click releases)</label
 			>
 			<div class="keys">
 				{#each [...keyDefinitions, ...latinKeys] as key}
@@ -269,7 +264,7 @@
 						type="button"
 						class="button is-small"
 						class:is-info={pressed.includes(key.id)}
-						aria-label={`Tecla ${key.label}`}
+						aria-label={`Key ${key.label}`}
 						aria-pressed={pressed.includes(key.id)}
 						title={`USB HID ${key.id} · ${key.code}`}
 						onpointerdown={(e) => pointerDown(e, key)}
@@ -289,22 +284,17 @@
 			</div>
 		</details>
 		<details class="mt-3 is-size-7">
-			<summary>Registros MMIO</summary>
+			<summary>MMIO registers</summary>
 			<p>
-				EF7 periodo RW · EF8 ACK W (1 consumir, 2 limpiar overflow, 4 limpiar
-				liberada) · EF9 estado R · EFA selector HID RW · EFB tecla R · EFC tipo
-				R · EFD eventos R · EFE ticks RW · EFF código HID R.
+				EF7 period RW · EF8 ACK W (1 consume, 2 clear overflow, 4 clear released) · EF9 status R · EFA HID selector RW · EFB key state R · EFC event type R · EFD event count R · EFE ticks RW · EFF HID code R.
 			</p>
 			<p>
-				KEY_STATE: bit0 presionada, bit1 liberada. KEY_STATUS: bits0–3
-				colas/overflow, byte alto modificadores. En modo clásico estas
-				direcciones son RAM.
+				KEY_STATE: bit0 held, bit1 released. KEY_STATUS: bits0–3 queues/overflow, high byte modifiers. In classic mode these addresses are RAM.
 			</p>
 		</details>
 	{:else}
 		<p class="is-size-7">
-			Modo clásico. Activa el hardware o selecciona Input asíncrono para
-			habilitar el teclado.
+			Classic mode. Enable the hardware or select Asynchronous input to enable the keyboard.
 		</p>
 	{/if}
 </div>

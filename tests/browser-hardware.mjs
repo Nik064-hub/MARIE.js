@@ -1,4 +1,4 @@
-import assert from 'node:assert/strict';
+﻿import assert from 'node:assert/strict';
 import { launchBrowser } from './launch-browser.mjs';
 
 const browser = await launchBrowser();
@@ -57,7 +57,7 @@ try {
 	await page.waitForTimeout(80);
 	assert.match(
 		await page.locator('.timer').innerText(),
-		/Congelado/,
+		/Frozen/,
 		'a breakpoint must stop the hardware clock',
 	);
 	const stoppedTicks = await page.getByTestId('timer-count').innerText();
@@ -90,7 +90,7 @@ try {
 		await page.getByRole('button', { name: 'Assemble', exact: true }).click();
 	}
 	await load('Halt');
-	const editablePeriod = page.getByLabel('Periodo del temporizador', {
+	const editablePeriod = page.getByLabel('Timer period', {
 		exact: true,
 	});
 	await editablePeriod.fill('47');
@@ -112,7 +112,7 @@ try {
 	);
 	await page.getByRole('button', { name: 'Run', exact: true }).click();
 	await page
-		.getByRole('button', { name: 'Capturar teclado', exact: true })
+		.getByRole('button', { name: 'Capture keyboard', exact: true })
 		.click();
 	await page.keyboard.down('d');
 	await page.waitForTimeout(150);
@@ -129,7 +129,7 @@ try {
 	await load(echo);
 	await page.getByRole('button', { name: 'Run', exact: true }).click();
 	const capture = page.getByRole('button', {
-		name: 'Capturar teclado',
+		name: 'Capture keyboard',
 		exact: true,
 	});
 	await capture.click();
@@ -175,7 +175,7 @@ try {
 
 	// Paused capture proves FIFO, repeat filtering, modifiers and virtual holds.
 	await page
-		.getByRole('button', { name: 'Capturar teclado', exact: true })
+		.getByRole('button', { name: 'Capture keyboard', exact: true })
 		.click();
 	await page.keyboard.down('a');
 	await page.keyboard.down('a');
@@ -189,10 +189,10 @@ try {
 	assert.equal(await page.getByTestId('input-count').innerText(), '2');
 	assert.equal(await page.getByTestId('event-count').innerText(), '4');
 	await page.keyboard.down('d');
-	await page.getByLabel('Periodo del temporizador', { exact: true }).click();
+	await page.getByLabel('Timer period', { exact: true }).click();
 	assert.match(
 		await page.getByTestId('pressed-keys').innerText(),
-		/ninguna/,
+		/none/,
 		'moving from capture to an input field must release keys',
 	);
 	await page.keyboard.up('d');
@@ -206,24 +206,24 @@ try {
 	);
 	assert.equal(await page.getByTestId('event-count').innerText(), '0');
 
-	await page.getByText('Teclado virtual', { exact: true }).click();
-	await page.getByLabel('Enclavar teclas', { exact: false }).check();
-	await page.getByRole('button', { name: 'Tecla D', exact: true }).click();
-	await page.getByRole('button', { name: 'Tecla Space', exact: true }).click();
+	await page.getByText('Virtual keyboard', { exact: true }).click();
+	await page.getByLabel('Latch keys', { exact: false }).check();
+	await page.getByRole('button', { name: 'Key D', exact: true }).click();
+	await page.getByRole('button', { name: 'Key Space', exact: true }).click();
 	assert.match(await page.getByTestId('pressed-keys').innerText(), /D, Space/);
 	assert.equal(await page.getByTestId('input-count').innerText(), '2');
-	await page.getByRole('button', { name: 'Tecla D', exact: true }).click();
+	await page.getByRole('button', { name: 'Key D', exact: true }).click();
 	assert.doesNotMatch(await page.getByTestId('pressed-keys').innerText(), /D,/);
 	await page
-		.getByRole('button', { name: 'Limpiar teclado y colas', exact: true })
+		.getByRole('button', { name: 'Clear keyboard and queues', exact: true })
 		.click();
-	assert.match(await page.getByTestId('pressed-keys').innerText(), /ninguna/);
-	await page.getByLabel('Enclavar teclas', { exact: false }).uncheck();
-	await page.getByRole('button', { name: 'Tecla B', exact: true }).hover();
+	assert.match(await page.getByTestId('pressed-keys').innerText(), /none/);
+	await page.getByLabel('Latch keys', { exact: false }).uncheck();
+	await page.getByRole('button', { name: 'Key B', exact: true }).hover();
 	await page.mouse.down();
 	assert.match(await page.getByTestId('pressed-keys').innerText(), /B/);
 	await page.mouse.up();
-	assert.match(await page.getByTestId('pressed-keys').innerText(), /ninguna/);
+	assert.match(await page.getByTestId('pressed-keys').innerText(), /none/);
 	await page.evaluate(() => window.dispatchEvent(new Event('blur')));
 	assert.equal(await page.getByTestId('event-count').innerText(), '0');
 
@@ -238,7 +238,7 @@ try {
 		.click();
 	await page.getByRole('button', { name: 'Run', exact: true }).click();
 	await page
-		.getByRole('button', { name: 'Capturar teclado', exact: true })
+		.getByRole('button', { name: 'Capture keyboard', exact: true })
 		.click();
 	await page.keyboard.press('ArrowRight');
 	await page.waitForFunction(
@@ -285,7 +285,7 @@ try {
 	await page.getByRole('button', { name: 'Step', exact: true }).click();
 	await page.waitForFunction(
 		() =>
-			document.querySelector('[aria-label="Periodo del temporizador"]')
+			document.querySelector('[aria-label="Timer period"]')
 				?.value === '47',
 	);
 	await page
@@ -296,7 +296,7 @@ try {
 		.click();
 	await page.waitForFunction(
 		() =>
-			document.querySelector('[aria-label="Periodo del temporizador"]')
+			document.querySelector('[aria-label="Timer period"]')
 				?.value === '30',
 	);
 
@@ -338,10 +338,10 @@ try {
 	await load('Loop, Load 0EFE\nStore 0F00\nJump Loop');
 	await page.getByText('Output log', { exact: true }).click();
 	await page.getByRole('button', { name: 'Run', exact: true }).click();
-	await page.getByText('Teclado virtual', { exact: true }).click();
-	await page.getByLabel('Enclavar teclas', { exact: false }).check();
-	await page.getByRole('button', { name: 'Tecla D', exact: true }).click();
-	await page.getByRole('button', { name: 'Tecla Space', exact: true }).click();
+	await page.getByText('Virtual keyboard', { exact: true }).click();
+	await page.getByLabel('Latch keys', { exact: false }).check();
+	await page.getByRole('button', { name: 'Key D', exact: true }).click();
+	await page.getByRole('button', { name: 'Key Space', exact: true }).click();
 	await page.waitForTimeout(100);
 	await page.screenshot({ path: 'tests/hardware-browser.png', fullPage: true });
 	await page.getByRole('button', { name: 'Pause', exact: true }).click();

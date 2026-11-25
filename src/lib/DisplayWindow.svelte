@@ -105,8 +105,8 @@
 			<button
 				type="button"
 				class="drag-handle"
-				aria-label="Mover Display"
-				title="Arrastra para mover; también puedes usar las flechas"
+				aria-label="Move Display"
+				title="Drag to move; arrow keys also work"
 				onpointerdown={(event) => begin(event)}
 				onpointermove={move}
 				onpointerup={() => (gesture = undefined)}
@@ -118,7 +118,7 @@
 			<button
 				type="button"
 				class="delete"
-				aria-label="Cerrar Display"
+				aria-label="Close Display"
 				onclick={() => (open = false)}
 			></button>
 		</header>
@@ -127,8 +127,8 @@
 			<button
 				type="button"
 				class={`resize-handle ${edge}`}
-				aria-label={`Redimensionar Display ${edge}`}
-				title="Arrastra para cambiar el tamaño; también puedes usar las flechas"
+				aria-label={`Resize Display ${edge}`}
+				title="Drag to resize; arrow keys also work"
 				onpointerdown={(event) => begin(event, edge)}
 				onpointermove={move}
 				onpointerup={() => (gesture = undefined)}

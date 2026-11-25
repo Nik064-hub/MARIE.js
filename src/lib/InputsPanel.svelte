@@ -58,8 +58,7 @@
 						{/if}
 						{#if item.format === 'async'}
 							<p class="is-size-7">
-								Teclado en Hardware extendido. Sin tecla: −1. Las colas de texto
-								se conservan.
+								Keyboard through Extended Hardware. No key: −1. Text queues are kept.
 							</p>
 						{:else if i >= unconsumed}
 							<textarea
@@ -87,7 +86,7 @@
 								<option value="oct">Octal</option>
 								<option value="bin">Binary</option>
 								<option value="unicode">Unicode (UTF-16BE)</option>
-								<option value="async">Input asíncrono</option>
+								<option value="async">Asynchronous input</option>
 							</select>
 						</div>
 					</td>

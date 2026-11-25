@@ -1,8 +1,8 @@
-# MARIE.js user and programming guide
+# MARIE Async user and programming guide
 
 This guide explains how to use the simulator and how to write interactive MARIE assembly programs with the asynchronous keyboard, the Extended Hardware Mode and the display. For installation and start-up, see the [README](../README.md). For how the extensions are built, see [changes.md](changes.md).
 
-**Conventions.** Features that exist in the original MARIE.js are marked _(original)_; features added by this project are marked _(added)_. Addresses and values are hexadecimal unless a table says otherwise. Some control labels added by this project are still in Spanish (for example "Input asíncrono" and "Capturar teclado"); this guide always quotes the label exactly as it appears on screen and gives its meaning.
+**Conventions.** Features that exist in the original MARIE.js are marked _(original)_; features added by this project are marked _(added)_. Addresses and values are hexadecimal unless a table says otherwise. Control labels are quoted exactly as they appear on screen.
 
 **Contents**
 
@@ -28,7 +28,7 @@ This guide explains how to use the simulator and how to write interactive MARIE 
 | Registers and memory                                                 | Live values of AC, IR, MAR, MBR, PC, IN, OUT and all memory cells. Double-click a value to edit it while the simulator is not halted.          | original |
 | Controls bar                                                         | **Assemble**, **Run** / **Pause** / **Continue**, step controls, **Restart**, **Speed**, fast mode.                                            | original |
 | Side panels: **Output log**, **RTL log**, **Watch list**, **Inputs** | Output values (with a format selector), register-transfer log, labelled memory cells, input queues.                                            | original |
-| Side panel: **Hardware extendido**                                   | Extended Hardware Mode switch, keyboard capture, virtual keyboard, timer period, MMIO summary.                                                 | added    |
+| Side panel: **Extended Hardware**                                    | Extended Hardware Mode switch, keyboard capture, virtual keyboard, timer period, MMIO summary.                                                 | added    |
 
 ### A.2 The assembler editor
 
@@ -102,7 +102,7 @@ Each row in the **Inputs** panel has a format selector. Use **Add additional inp
 | **Octal**              | text queue    | one number per line, base 8                 | the number                                                     | yes                       | original |
 | **Binary**             | text queue    | one number per line, base 2                 | the number                                                     | yes                       | original |
 | **Unicode (UTF-16BE)** | text queue    | free text                                   | the 16-bit code of the next character; ASCII for plain letters | yes                       | original |
-| **Input asíncrono**    | live keyboard | nothing: you press keys in the capture area | next queued key code, or `-1` (`FFFF`) if none                 | **no**                    | added    |
+| **Asynchronous input** | live keyboard | nothing: you press keys in the capture area | next queued key code, or `-1` (`FFFF`) if none                 | **no**                    | added    |
 
 There is no separate "ASCII" mode: ASCII characters are typed in the **Unicode (UTF-16BE)** mode, where `A` gives 65.
 
@@ -114,7 +114,7 @@ Typing the number `5` in Decimal mode gives the value 5; typing the character `5
 
 ### B.2 Asynchronous input _(added)_
 
-When a row is set to **Input asíncrono**, **every** `Input` in the program reads the live keyboard queue instead of the text queues, and never waits:
+When a row is set to **Asynchronous input**, **every** `Input` in the program reads the live keyboard queue instead of the text queues, and never waits:
 
 - a key is waiting: `Input` returns its code and removes it from the queue;
 - no key is waiting: `Input` returns `-1`, which in 16 bits is `FFFF`. `Skipcond 000` (AC < 0) detects it. Note that `0` is a valid key code (NUL), so test "< 0", not "= 0".
@@ -465,10 +465,10 @@ Keys not in this table are ignored. The browser or the operating system may rese
 
 ### D.1 Set up
 
-1. In the **Inputs** panel choose **Input asíncrono** in the format selector of a row (use **Add additional input** if you need a new row). This turns asynchronous mode on for the whole program.
-2. Optionally switch on **Extended Hardware Mode** in the **Hardware extendido** panel (needed only for the features in B.3).
+1. In the **Inputs** panel choose **Asynchronous input** in the format selector of a row (use **Add additional input** if you need a new row). This turns asynchronous mode on for the whole program.
+2. Optionally switch on **Extended Hardware Mode** in the **Extended Hardware** panel (needed only for the features in B.3).
 3. Write your program, press **Assemble**, then **Run**.
-4. In **Hardware extendido** click the wide **Capturar teclado** button. It turns blue and reads **Teclado capturando — haz clic fuera para salir**: the keyboard is now connected to the simulator.
+4. In **Extended Hardware** click the wide **Capture keyboard** button. It turns blue and reads **Capturing keyboard — click outside to stop**: the keyboard is now connected to the simulator.
 
 ### D.2 Keeping the focus
 
@@ -482,10 +482,10 @@ Every key press feeds two independent first-in-first-out queues, each with **cap
 
 | Queue                                    | Contains                                                     | Consumed by                              |
 | ---------------------------------------- | ------------------------------------------------------------ | ---------------------------------------- |
-| Character queue ("INPUT pendientes")     | One entry per key press that has a code (C.2–C.4)            | `Input` (asynchronous)                   |
-| Physical event queue ("Eventos físicos") | Key-down (type 1) and key-up (type 2) events with the HID id | `ACK` register `EF8` (extended hardware) |
+| Character queue ("Pending INPUT")        | One entry per key press that has a code (C.2–C.4)            | `Input` (asynchronous)                   |
+| Physical event queue ("Physical events") | Key-down (type 1) and key-up (type 2) events with the HID id | `ACK` register `EF8` (extended hardware) |
 
-Reading one queue never consumes the other. The panel shows the number of pending entries, the list of pressed keys ("Presionadas"), the next physical event ("Siguiente") and the modifier bits.
+Reading one queue never consumes the other. The panel shows the number of pending entries, the list of pressed keys ("Pressed"), the next physical event ("Next") and the modifier bits.
 
 ### D.4 Empty queue, consecutive presses
 
@@ -493,7 +493,7 @@ Reading one queue never consumes the other. The panel shows the number of pendin
 
 ### D.5 Overflow
 
-When a queue is full the **new** entry is discarded; earlier entries keep their order, and a sticky overflow flag is set (character queue: bit 2 = 4 of `EF9`; physical queue: bit 3 = 8). The panel shows "Overflow: Sí (se descartó el nuevo)". The held/released state still updates. The flags are cleared by writing 2 to `EF8` (and by Restart or clearing the keyboard).
+When a queue is full the **new** entry is discarded; earlier entries keep their order, and a sticky overflow flag is set (character queue: bit 2 = 4 of `EF9`; physical queue: bit 3 = 8). The panel shows "Overflow: Yes (newest dropped)". The held/released state still updates. The flags are cleared by writing 2 to `EF8` (and by Restart or clearing the keyboard).
 
 ### D.6 Held keys, release and auto-repeat
 
@@ -507,11 +507,11 @@ Only keys listed in C.8 are recognised. The key's position decides its HID id; t
 
 ### D.8 Virtual keyboard
 
-The **Teclado virtual** section (a collapsible list) shows every key as a button. Pressing a button with the mouse sends the same events as a physical key: hold the button to hold the key. The checkbox **Enclavar teclas (clic mantiene / clic libera)** latches keys: one click holds, the next click releases, so you can hold two keys (for example D and Space) with a mouse. Shift, Ctrl and Alt buttons change the characters of the other buttons (US layout symbols). Accented letters are extra buttons that use the physical position of their base letter.
+The **Virtual keyboard** section (a collapsible list) shows every key as a button. Pressing a button with the mouse sends the same events as a physical key: hold the button to hold the key. The checkbox **Latch keys (click holds / click releases)** latches keys: one click holds, the next click releases, so you can hold two keys (for example D and Space) with a mouse. Shift, Ctrl and Alt buttons change the characters of the other buttons (US layout symbols). Accented letters are extra buttons that use the physical position of their base letter.
 
 ### D.9 Resetting inputs
 
-- **Limpiar teclado y colas** releases all keys and empties both queues and the latches. The key selected by the program (`EFA`) is kept.
+- **Clear keyboard and queues** releases all keys and empties both queues and the latches. The key selected by the program (`EFA`) is kept.
 - **Restart**, **Assemble**, loading another project and changing the hardware mode reset the keyboard (including the selector) and the timer counter.
 - Pressed keys and events are session state: they are **not** saved in the project.
 
@@ -520,7 +520,7 @@ The **Teclado virtual** section (a collapsible list) shows every key as a button
 The history stores a snapshot of the devices whenever an instruction reads or writes an MMIO register or consumes an asynchronous `Input`. Stepping back restores the **queues, the key selector, the release latch, the overflow flags, the timer period/counter/phase** to what they were.
 
 - **Held keys and AltGr are not restored**: they describe your fingers now, not the program's past. (Earlier builds restored them, which could resurrect keys you had already released; this was fixed in commit `081f05f`.)
-- While you are stepping back, the timer is **frozen** and the capture **rejects new key events**; the panel shows "Historial congelado. Continúa o avanza un paso para aceptar eventos nuevos." Time resumes from the restored value without adding the time you spent paused.
+- While you are stepping back, the timer is **frozen** and the capture **rejects new key events**; the panel shows "History frozen. Continue or take a step to accept new events." Time resumes from the restored value without adding the time you spent paused.
 - The history cannot replay keystrokes that the program never received, and it does not exist in fast mode.
 - Clicking a button outside the hardware panel ends the capture and releases all keys.
 
@@ -528,7 +528,7 @@ The history stores a snapshot of the devices whenever an instruction reads or wr
 
 The examples build on each other. Every listing was **assembled with the project's assembler and executed on the simulator engine** (`MarieSim`) by an automated check that injected the key presses described under "Expected behavior" and compared the output or display cells. They were **not** clicked through in the browser interface, and the timer examples (E.12, E.14) depended on real elapsed time. The check is not part of the repository; the listings are copied from the verified files.
 
-For every example, "Setup" lists what to switch on, then paste the code, press **Assemble** and **Run**. For examples that poll the keyboard, click **Capturar teclado** after Run and press the keys (D.1–D.2); stop them with **Pause**.
+For every example, "Setup" lists what to switch on, then paste the code, press **Assemble** and **Run**. For examples that poll the keyboard, click **Capture keyboard** after Run and press the keys (D.1–D.2); stop them with **Pause**.
 
 ### E.1 Traditional blocking `Input`
 
@@ -558,11 +558,11 @@ Y, DEC 0
 ### E.2 Non-blocking `Input`, waiting for a key
 
 **Goal.** Poll until a key arrives, then print its code.
-**Setup.** Set a row to **Input asíncrono**.
+**Setup.** Set a row to **Asynchronous input**.
 
 ```mas
 / Asynchronous INPUT: poll until a key arrives, then print its code.
-/ Setup: set an input row to "Input asíncrono"; capture the keyboard.
+/ Setup: set an input row to "Asynchronous input"; capture the keyboard.
 Wait,  Input
        Skipcond 000     / skip the next line if AC < 0 (no key)
        Jump Got
@@ -578,12 +578,12 @@ Got,   Output
 ### E.3 Detecting an empty input
 
 **Goal.** Show that the program keeps running without keys: count the polls that found nothing.
-**Setup.** **Input asíncrono**. Press **Run**, then capture the keyboard and press a key.
+**Setup.** **Asynchronous input**. Press **Run**, then capture the keyboard and press a key.
 
 ```mas
 / Detect an empty input without waiting: counts how many polls found no key,
 / then prints that number when a key finally arrives.
-/ Setup: "Input asíncrono". Press Run first, then capture the keyboard and press a key.
+/ Setup: "Asynchronous input". Press Run first, then capture the keyboard and press a key.
 Poll,   Input
         Skipcond 000     / AC < 0 means "no key"
         Jump HasKey
@@ -606,11 +606,11 @@ One,    DEC 1
 ### E.4 Detecting a letter
 
 **Goal.** Print 1 if the key is a letter (A–Z or a–z), otherwise 0.
-**Setup.** **Input asíncrono**.
+**Setup.** **Asynchronous input**.
 
 ```mas
 / Is the next key a letter? Prints 1 for A-Z or a-z, otherwise 0.
-/ Setup: "Input asíncrono".
+/ Setup: "Asynchronous input".
 Poll,    Input
          Skipcond 000
          Jump Got
@@ -657,11 +657,11 @@ One,     DEC 1
 ### E.5 Detecting a number
 
 **Goal.** Print the numeric value of a digit key, or 10 if the key is not a digit.
-**Setup.** **Input asíncrono**.
+**Setup.** **Asynchronous input**.
 
 ```mas
 / Is the next key a digit? Prints its value 0-9, or 10 for "not a digit".
-/ Setup: "Input asíncrono". The key 1 arrives as ASCII 49, so we subtract 48.
+/ Setup: "Asynchronous input". The key 1 arrives as ASCII 49, so we subtract 48.
 Poll,    Input
          Skipcond 000
          Jump Got
@@ -694,11 +694,11 @@ Ten,     DEC 10
 ### E.6 Detecting the arrow keys
 
 **Goal.** Print 1, 2, 3 or 4 for up, down, left, right, and keep polling.
-**Setup.** **Input asíncrono**.
+**Setup.** **Asynchronous input**.
 
 ```mas
 / Arrow keys: prints 1 = up, 2 = down, 3 = left, 4 = right, then keeps polling.
-/ Setup: "Input asíncrono". Arrow codes are 256, 257, 258, 259.
+/ Setup: "Asynchronous input". Arrow codes are 256, 257, 258, 259.
 Poll,    Input
          Skipcond 000
          Jump Got
@@ -747,11 +747,11 @@ Four,    DEC 4
 ### E.7 WASD controls
 
 **Goal.** Same as E.6 for W, A, S and D.
-**Setup.** **Input asíncrono**.
+**Setup.** **Asynchronous input**.
 
 ```mas
 / WASD: prints 1 = W, 2 = A, 3 = S, 4 = D (lower case), then keeps polling.
-/ Setup: "Input asíncrono". ASCII: w = 119, a = 97, s = 115, d = 100.
+/ Setup: "Asynchronous input". ASCII: w = 119, a = 97, s = 115, d = 100.
 Poll,    Input
          Skipcond 000
          Jump Got
@@ -800,12 +800,12 @@ Four,    DEC 4
 ### E.8 Different actions for different keys
 
 **Goal.** `w` adds 1 to a counter, `s` subtracts 1, Space prints it, `q` halts.
-**Setup.** **Input asíncrono**.
+**Setup.** **Asynchronous input**.
 
 ```mas
 / Different actions for different keys.
 /   w = counter + 1,  s = counter - 1,  Space = print counter,  q = halt.
-/ Setup: "Input asíncrono".
+/ Setup: "Asynchronous input".
 Poll,    Input
          Skipcond 000
          Jump Got
@@ -855,12 +855,12 @@ KeyQ,    DEC 113
 ### E.9 A continuous interactive loop
 
 **Goal.** A program that keeps running when no key is pressed: it repaints a pixel every pass and reacts to `x`.
-**Setup.** **Input asíncrono**. Open the **Display** window.
+**Setup.** **Asynchronous input**. Open the **Display** window.
 
 ```mas
 / Continuous interactive loop: the program keeps running with or without keys.
 / Every pass changes the colour of the first display pixel; x (120) halts.
-/ Setup: "Input asíncrono".
+/ Setup: "Asynchronous input".
 Loop,    Load Frame
          Add One
          Store Frame
@@ -886,7 +886,7 @@ KeyX,    DEC 120
 ### E.10 Detecting a held key with MMIO
 
 **Goal.** Light the first pixel while D is held.
-**Setup.** **Extended Hardware Mode** on (asynchronous input not needed). **Display** open. Press Run, click **Capturar teclado**, then hold D.
+**Setup.** **Extended Hardware Mode** on (asynchronous input not needed). **Display** open. Press Run, click **Capture keyboard**, then hold D.
 
 ```mas
 / Held key via MMIO: the first display pixel is white while D is held, black otherwise.
@@ -1007,12 +1007,12 @@ White,  HEX 7FFF
 ### E.14 Putting it together: a moving pixel
 
 **Goal.** A game-loop skeleton: W/A/S/D choose a direction, and the pixel moves one cell per timer tick.
-**Setup.** **Input asíncrono** and **Extended Hardware Mode** on. **Display** open.
+**Setup.** **Asynchronous input** and **Extended Hardware Mode** on. **Display** open.
 
 ```mas
 / Game-loop skeleton: move a white pixel with W/A/S/D, one step per timer tick.
 /   read input -> update state -> update display -> repeat
-/ Setup: "Input asíncrono" + "Extended Hardware Mode". No wall checks (see the guide).
+/ Setup: "Asynchronous input" + "Extended Hardware Mode". No wall checks (see the guide).
         Load Period
         Store 0EF7          / 200 ms per tick
         Load Start
@@ -1103,7 +1103,7 @@ Extended Hardware Mode _(added)_ connects virtual peripherals to the MARIE memor
 
 ### F.2 Switching it on and off
 
-Tick or untick **Extended Hardware Mode** in the **Hardware extendido** panel. The setting is saved with the project. Changing it **discards the execution history** (it is a new execution), and resets the devices. Projects saved by the original MARIE open with the mode off.
+Tick or untick **Extended Hardware Mode** in the **Extended Hardware** panel. The setting is saved with the project. Changing it **discards the execution history** (it is a new execution), and resets the devices. Projects saved by the original MARIE open with the mode off.
 
 ### F.3 Memory-mapped I/O
 
@@ -1134,7 +1134,7 @@ R = read, W = write. Reading never consumes anything. Values are 16 bits; writte
 
 **Timer.** `EF7` sets the tick length; `EFE` counts ticks while the program runs. The time comes from the real clock (`performance.now()`), **not** from the number of instructions, so the speed of the game does not depend on the CPU speed slider. The timer runs only during **Run/Continue**; it is frozen by Pause, Halt, manual stepping and rewinding, and the paused time is not accumulated. Writing `EF7` first settles the ticks already elapsed and then restarts the period. Restart sets the counter to 0 and keeps the period. Because the counter wraps from 65535 to 0, measure intervals with the subtraction `current − previous` (modulo 65536), not with `>`. With a 300 ms period the counter wraps after about 5.5 hours.
 
-**Limits of the timer.** Period 1 ms is accepted but the CPU may not be able to read every tick: if several ticks pass between two reads, your program sees only the final count and must decide how to catch up. The period field of the panel ("Periodo (ms)") accepts 1–65535 and writes `EF7` through a reversible access.
+**Limits of the timer.** Period 1 ms is accepted but the CPU may not be able to read every tick: if several ticks pass between two reads, your program sees only the final count and must decide how to catch up. The period field of the panel ("Period (ms)") accepts 1–65535 and writes `EF7` through a reversible access.
 
 **Keyboard status.** `EF9` tells whether characters or events are waiting, whether a queue overflowed, and which modifiers are held. **Selected key and held keys.** Write the HID id to `EFA` and read `EFB` (E.10). **Releases.** Read bit 1 of `EFB` and acknowledge with `EF8` = 4 (E.11). **Events.** `EFC`, `EFF` and `EFD` describe the oldest event; write `EF8` = 1 to remove it and move to the next. **Overflow.** Check `EF9` bits 2 and 3, then write `EF8` = 2.
 
@@ -1214,13 +1214,13 @@ In normal mode the history is **unbounded**. As a rough orientation measured in 
 
 | Symptom                                         | Likely cause and fix                                                                                                                                                                   |
 | ----------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| No capture area ("Capturar teclado") is visible | Neither **Input asíncrono** nor **Extended Hardware Mode** is on.                                                                                                                      |
-| Keys do nothing                                 | The capture button is not focused (click it; the label must read "Teclado capturando…"), or the program was not running, or the focus was lost (clicking elsewhere, switching window). |
+| No capture area ("Capture keyboard") is visible | Neither **Asynchronous input** nor **Extended Hardware Mode** is on.                                                                                                                   |
+| Keys do nothing                                 | The capture button is not focused (click it; the label must read "Capturing keyboard…"), or the program was not running, or the focus was lost (clicking elsewhere, switching window). |
 | `Input` returns 65535 or −1                     | That is "no key". Test with `Skipcond 000`.                                                                                                                                            |
 | Wrong code for a key                            | Check whether you want the character (`Input`, section C) or the position (HID id, MMIO). Capital versus small letters differ by 32. Check Caps Lock and your layout.                  |
 | An arrow key does not match                     | Arrows are 256–259, not ASCII.                                                                                                                                                         |
 | Shift appears before the letter                 | Modifiers are queued as codes 736–743; ignore them in your program.                                                                                                                    |
-| A key seems stuck                               | Click **Limpiar teclado y colas**; the capture clears itself when focus is lost.                                                                                                       |
+| A key seems stuck                               | Click **Clear keyboard and queues**; the capture clears itself when focus is lost.                                                                                                     |
 | Overflow flag is on                             | Your program is slower than your typing; poll faster or acknowledge with `EF8` = 2.                                                                                                    |
 | The program is too slow for the timer           | Use a larger period (`EF7`), raise **Speed**, simplify the loop.                                                                                                                       |
 | MMIO values are always 0 or unchanged           | **Extended Hardware Mode** is off (then `EF7`–`EFF` are plain RAM), or the timer is frozen (Pause, Halt, stepping, rewinding).                                                         |
