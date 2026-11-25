@@ -346,3 +346,52 @@ test('documented MMIO addresses and timer default never change', () => {
 	expect([MMIO_START, MMIO_END]).toEqual([0xef7, 0xeff]);
 	expect(DEFAULT_TIMER_PERIOD).toBe(300);
 });
+
+describe('timer period limits and history under long polling', () => {
+	test.each([
+		[0, 1],
+		[1, 1],
+		[65535, 65535],
+		[65536, 1], // MMIO words are 16 bits: 65536 wraps to 0, which is clamped to 1
+		[70000, 4464],
+	])('writing %i to EF7 reads back %i', (written, expected) => {
+		const hardware = new ExtendedHardware(() => 0);
+		hardware.configure(true, false);
+		hardware.write(MMIO.PERIOD, written);
+		expect(hardware.read(MMIO.PERIOD)).toBe(expected);
+	});
+	test('a long polling run shares keyboard snapshots and rewinds to the initial state', async () => {
+		const sim = program('Loop, Load 0EFE\nStore 0F00\nLoad 0EF9\nJump Loop');
+		sim.configureHardware(true, true);
+		sim.hardware.keyboard.keyDown({ key: 'a', code: 'KeyA' });
+		const initial = sim.state();
+		for (let i = 0; i < 50_000; i++) await sim.microStep();
+		const keyboards = new Set(
+			sim.log.map((entry) => (entry as any).hardwareBefore?.keyboard),
+		);
+		keyboards.delete(undefined);
+		expect(keyboards.size).toBe(1);
+		while (sim.log.length) sim.microStepBack();
+		expect(sim.state().registers).toEqual(initial.registers);
+		expect(sim.state().memory.slice(0, 0xef7)).toEqual(
+			initial.memory.slice(0, 0xef7),
+		);
+		expect(sim.hardware.keyboard.pressed).toEqual([4]);
+	});
+	test('running forward again after rewinding reproduces the same state', async () => {
+		const code =
+			'Load Sel\nStore 0EFA\nLoad 0EFB\nStore 0F01\nLoad Per\nStore 0EF7\nHalt\nSel, DEC 7\nPer, DEC 50';
+		const sim = program(code);
+		sim.configureHardware(true, false);
+		sim.hardware.keyboard.keyDown({ key: 'd', code: 'KeyD' });
+		await sim.run();
+		const finished = sim.state();
+		const period = sim.hardware.period;
+		for (let i = 0; i < 4; i++) sim.stepBack();
+		expect(sim.state().registers).not.toEqual(finished.registers);
+		await sim.run();
+		expect(sim.state().registers).toEqual(finished.registers);
+		expect(sim.state().memory).toEqual(finished.memory);
+		expect(sim.hardware.period).toBe(period);
+	});
+});
