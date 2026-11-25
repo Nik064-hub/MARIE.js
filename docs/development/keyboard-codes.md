@@ -1,3 +1,5 @@
+> **Historical document.** This is the previous keyboard contract (Spanish), kept for reference. Its current content was consolidated into the [user guide](../user-guide.md#c-keyboard-codes) and [docs/changes.md](../changes.md); where they differ, those documents are authoritative.
+
 # Contrato del teclado extendido
 
 El controlador central es `src/keyboard.ts`. No contiene lógica de juegos. Una pulsación alimenta dos canales independientes: la cola lógica que consume `INPUT` y la cola de eventos físicos que consume `KEY_ACK`. Leer una cola no consume la otra. Ambas tienen capacidad de 64 elementos; al llenarse se descarta el evento nuevo, se conserva el orden previo y se activa un indicador de desbordamiento hasta confirmarlo. El estado de teclas mantenidas y liberadas sigue actualizándose incluso si una cola está llena.

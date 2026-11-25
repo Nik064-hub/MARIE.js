@@ -1,3 +1,5 @@
+> **Historical document.** This is the previous hardware manual (Spanish), kept for reference. Its current content was consolidated into the [user guide](../user-guide.md#f-extended-hardware-mode) and [docs/changes.md](../changes.md); where they differ, those documents are authoritative.
+
 # MARIE.js: periféricos y juegos en tiempo real
 
 ## Iniciar y elegir modo
