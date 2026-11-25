@@ -1,3 +1,5 @@
+> **Historical document.** This is the original implementation plan written during development on 2026-11-19 (in Spanish). It records past decisions and the environment of that time, including paths and tools that no longer apply. It is not current installation or usage guidance; see the [README](../../../README.md) and [docs/changes.md](../../changes.md).
+
 # Extended Hardware Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox syntax for tracking.

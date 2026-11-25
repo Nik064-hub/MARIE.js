@@ -1,3 +1,5 @@
+> **Historical document.** This is the original design specification written during development on 2026-11-19 (in Spanish). It records past decisions and the environment of that time, including paths and tools that no longer apply. It is not current installation or usage guidance; see the [README](../../../README.md) and [docs/changes.md](../../changes.md).
+
 # Hardware extendido de MARIE.js — arquitectura aprobada
 
 La solicitud del 19-11-2026 aprueba esta arquitectura híbrida y su ejecución autónoma. Sustituye la propuesta inicial. No se implementan videojuegos; sí diagnósticos de periféricos en ensamblador.

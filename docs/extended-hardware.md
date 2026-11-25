@@ -14,7 +14,7 @@ npm run check
 npm run build
 ```
 
-`ci` es necesario para instalar o reinstalar las dependencias; no hace falta repetirlo al iniciar. El lanzador utiliza la instalación local de npm y la ruta de Node.js de este equipo. En otro equipo instala Node.js compatible con Vite 7 y usa `npm ci`, `npm run dev`, etc. Se necesita el servidor de desarrollo o un servidor de archivos para `dist`, no abrir `index.html` con `file://`.
+`ci` es necesario para instalar o reinstalar las dependencias; no hace falta repetirlo al iniciar. Los lanzadores usan el Node.js y npm instalados en el sistema (Node.js 20.19+, 22.12+ o 24+). Instalación completa: consulta el README principal. Se necesita el servidor de desarrollo o un servidor de archivos para `dist`, no abrir `index.html` con `file://`.
 
 Hay dos opciones independientes:
 
@@ -128,7 +128,7 @@ Se guardan snapshots de los periféricos en las lecturas/escrituras MMIO y en lo
 
 Al comenzar el retroceso, el tiempo se congela y la captura rechaza nuevos eventos externos. Los snapshots restauran el estado observado en los accesos registrados, no cada instante del mundo real entre instrucciones. Al continuar o avanzar un paso se permiten nuevos eventos; al reanudar el tiempo se parte del contador/fracción restaurados, sin sumar la espera durante la depuración.
 
-Una tecla histórica restaurada no significa que el usuario la mantenga físicamente ahora. Iniciar una captura nueva limpia ese estado histórico y comienza una sesión coherente con el teclado actual; también existe **Limpiar teclado y colas**. El historial no puede reproducir pulsaciones que el sistema nunca entregó. Cambiar la configuración de modos descarta el historial incompatible de CPU; los archivos de proyecto no son grabaciones de eventos externos. Evita mezclar captura nueva y retroceso si necesitas una repetición experimental idéntica.
+Al retroceder se restauran las colas, el selector, el latch de liberación y el desbordamiento, pero no las teclas mantenidas: estas son estado físico actual y se conservan tal como el usuario las mantiene ahora. También existe **Limpiar teclado y colas**. El historial no puede reproducir pulsaciones que el sistema nunca entregó. Cambiar la configuración de modos descarta el historial incompatible de CPU; los archivos de proyecto no son grabaciones de eventos externos. Evita mezclar captura nueva y retroceso si necesitas una repetición experimental idéntica.
 
 Al activar o desactivar el registro de acciones se descarta el historial previo: no se permite aplicar acciones antiguas al estado resultante de una ejecución rápida sin registro. Para sesiones largas de juego se recomienda modo rápido; el historial normal crece con cada microoperación, como en el simulador original.
 

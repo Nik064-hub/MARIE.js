@@ -1,3 +1,5 @@
+> **Historical document.** This is the original validation record written during development on 2026-11-19 (in Spanish). It records past decisions and the environment of that time, including paths and tools that no longer apply. It is not current installation or usage guidance; see the [README](../../README.md) and [docs/changes.md](../changes.md).
+
 # Validación de hardware extendido — 19 de noviembre de 2026
 
 Rama: `feat/extended-hardware`. Base original: `a22d884`.
