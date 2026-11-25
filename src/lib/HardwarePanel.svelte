@@ -4,6 +4,7 @@
 	import {
 		keyDefinitions,
 		type KeyDefinition,
+		type KeyboardSnapshot,
 		type KeySignal,
 	} from '../keyboard';
 	import { virtualKeySignal } from '../virtual-keyboard';
@@ -23,8 +24,9 @@
 	} = $props();
 	let root: HTMLDivElement;
 	let capture = $state<HTMLButtonElement>();
-	let pressed = $state<number[]>([]);
-	let events = $state<{ code: number; type: number }[]>([]);
+	// Raw: these point into the keyboard's shared immutable snapshot.
+	let pressed = $state.raw<number[]>([]);
+	let events = $state.raw<{ code: number; type: number }[]>([]);
 	let inputCount = $state(0);
 	let status = $state(0);
 	let modifiers = $state(0);
@@ -46,16 +48,23 @@
 		}),
 	);
 
+	let shownKeyboard: KeyboardSnapshot | undefined;
 	function refresh() {
-		pressed = [...hardware.keyboard.pressed];
-		for (const code of sources.keys()) {
-			const id = keyDefinitions.find((key) => key.code === code)?.id;
-			if (id === undefined || !pressed.includes(id)) sources.delete(code);
+		// The keyboard returns the same snapshot object until something changes,
+		// so an idle panel only reads the timer and assigns nothing else.
+		const keyboard = hardware.keyboard.snapshot();
+		if (keyboard !== shownKeyboard) {
+			shownKeyboard = keyboard;
+			pressed = keyboard.pressed;
+			for (const code of sources.keys()) {
+				const id = keyDefinitions.find((key) => key.code === code)?.id;
+				if (id === undefined || !pressed.includes(id)) sources.delete(code);
+			}
+			events = keyboard.events;
+			inputCount = keyboard.input.length;
+			status = hardware.keyboard.status;
+			modifiers = hardware.keyboard.modifiers;
 		}
-		events = [...hardware.keyboard.events];
-		inputCount = hardware.keyboard.snapshot().input.length;
-		status = hardware.keyboard.status;
-		modifiers = hardware.keyboard.modifiers;
 		ticks = hardware.count;
 		currentPeriod = hardware.period;
 		timerRunning = hardware.running;
