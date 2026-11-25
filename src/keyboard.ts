@@ -143,7 +143,13 @@ export interface KeyboardSnapshot {
 }
 
 export class KeyboardController {
-	select = 0;
+	private _select = 0;
+	/**
+	 * Snapshots are immutable and shared: repeated snapshots of an unchanged
+	 * keyboard (e.g. a program polling a status register) reuse one object.
+	 * Every method that changes device state must reset this to undefined.
+	 */
+	private cached?: KeyboardSnapshot;
 	private inputQueue: number[] = [];
 	private eventQueue: PhysicalKeyEvent[] = [];
 	private down = new Set<number>();
@@ -151,6 +157,13 @@ export class KeyboardController {
 	private overflow = 0;
 	private altGraph = false;
 
+	get select(): number {
+		return this._select;
+	}
+	set select(value: number) {
+		this._select = value;
+		this.cached = undefined;
+	}
 	get events(): readonly PhysicalKeyEvent[] {
 		return this.eventQueue;
 	}
@@ -184,6 +197,7 @@ export class KeyboardController {
 		const definition = byCode.get(event.code);
 		if (!definition || event.repeat || this.down.has(definition.id))
 			return false;
+		this.cached = undefined;
 		this.down.add(definition.id);
 		if (definition.id === 230) {
 			this.altGraph =
@@ -219,6 +233,7 @@ export class KeyboardController {
 	keyUp(event: KeySignal): boolean {
 		const definition = byCode.get(event.code);
 		if (!definition || !this.down.delete(definition.id)) return false;
+		this.cached = undefined;
 		if (definition.id === 230) this.altGraph = false;
 		this.released.add(definition.id);
 		this.pushEvent({ code: definition.id, type: 2 });
@@ -226,27 +241,30 @@ export class KeyboardController {
 	}
 
 	readInput(): number {
+		this.cached = undefined;
 		return this.inputQueue.shift() ?? -1;
 	}
 
 	acknowledge(value: number): void {
+		this.cached = undefined;
 		if (value & 1) this.eventQueue.shift();
 		if (value & 2) this.overflow = 0;
 		if (value & 4) this.released.delete(this.select);
 	}
 
 	clear(): void {
+		this.cached = undefined;
 		this.inputQueue = [];
 		this.eventQueue = [];
 		this.down.clear();
 		this.released.clear();
 		this.overflow = 0;
 		this.altGraph = false;
-		this.select = 0;
+		this._select = 0;
 	}
 
 	snapshot(): KeyboardSnapshot {
-		return {
+		return (this.cached ??= {
 			input: [...this.inputQueue],
 			events: this.eventQueue.map((event) => ({ ...event })),
 			pressed: [...this.down],
@@ -254,7 +272,7 @@ export class KeyboardController {
 			select: this.select,
 			overflow: this.overflow,
 			altGraph: this.altGraph,
-		};
+		});
 	}
 
 	/**
@@ -265,10 +283,11 @@ export class KeyboardController {
 	 * the device registers and pending queues return to their historical value.
 	 */
 	restore(snapshot: KeyboardSnapshot, keepPhysical = false): void {
+		this.cached = undefined;
 		this.inputQueue = [...snapshot.input];
 		this.eventQueue = snapshot.events.map((event) => ({ ...event }));
 		this.released = new Set(snapshot.released);
-		this.select = snapshot.select;
+		this._select = snapshot.select;
 		this.overflow = snapshot.overflow;
 		if (keepPhysical) return;
 		this.down = new Set(snapshot.pressed);

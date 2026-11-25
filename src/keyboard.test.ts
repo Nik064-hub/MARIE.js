@@ -153,3 +153,38 @@ describe('extended keyboard', () => {
 		expect(keyboard.events.length).toBe(3);
 	});
 });
+
+describe('shared keyboard snapshots', () => {
+	const A = { key: 'a', code: 'KeyA' };
+	test('an unchanged keyboard reuses one immutable snapshot', () => {
+		const keyboard = new KeyboardController();
+		keyboard.keyDown(A);
+		expect(keyboard.snapshot()).toBe(keyboard.snapshot());
+	});
+	test.each([
+		['keyUp', (k: KeyboardController) => k.keyUp(A)],
+		['readInput', (k: KeyboardController) => k.readInput()],
+		['acknowledge', (k: KeyboardController) => k.acknowledge(1)],
+		['select', (k: KeyboardController) => (k.select = 9)],
+		['keyDown', (k: KeyboardController) => k.keyDown({ key: 'b', code: 'KeyB' })],
+		['clear', (k: KeyboardController) => k.clear()],
+	])('%s invalidates the cache without altering older snapshots', (_, change) => {
+		const keyboard = new KeyboardController();
+		keyboard.keyDown(A);
+		const before = keyboard.snapshot();
+		const frozen = JSON.stringify(before);
+		change(keyboard);
+		const after = keyboard.snapshot();
+		expect(after).not.toBe(before);
+		expect(JSON.stringify(before)).toBe(frozen);
+		expect(JSON.stringify(after)).not.toBe(frozen);
+	});
+	test('restore returns a keyboard whose next snapshot reflects the restored values', () => {
+		const keyboard = new KeyboardController();
+		keyboard.keyDown(A);
+		const before = keyboard.snapshot();
+		keyboard.readInput();
+		keyboard.restore(before);
+		expect(keyboard.snapshot()).toEqual(before);
+	});
+});
