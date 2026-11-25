@@ -274,3 +274,61 @@ describe('virtual timer', () => {
 		expect(hardware.count).toBe(2);
 	});
 });
+
+describe('rewinding keeps the physical keyboard separate from CPU history', () => {
+	const code = 'Load Sel\nStore 0EFA\nLoad 0EFB\nHalt\nSel, DEC 7';
+	const D = { key: 'd', code: 'KeyD' };
+
+	async function stepsUntilStore(sim: MarieSim) {
+		await instruction(sim);
+		await instruction(sim);
+	}
+
+	test('a key released before stepping back does not reappear as held', async () => {
+		const sim = program(code);
+		sim.configureHardware(true, false);
+		sim.hardware.keyboard.keyDown(D);
+		await stepsUntilStore(sim); // the MMIO store snapshots the device with D held
+		sim.hardware.keyboard.keyUp(D);
+		sim.stepBack();
+		sim.stepBack();
+		expect(sim.hardware.keyboard.pressed).toEqual([]);
+		await sim.run();
+		expect(sim.registers.AC & 1).toBe(0); // D is not physically down any more
+	});
+	test('a key pressed after the snapshot stays held when stepping back', async () => {
+		const sim = program(code);
+		sim.configureHardware(true, false);
+		await stepsUntilStore(sim);
+		sim.hardware.keyboard.keyDown(D);
+		sim.stepBack();
+		sim.stepBack();
+		expect(sim.hardware.keyboard.pressed).toEqual([7]);
+		await sim.run();
+		expect(sim.registers.AC & 1).toBe(1);
+	});
+	test('queues and the release latch still return to their historical value', async () => {
+		const sim = program(code);
+		sim.configureHardware(true, false);
+		sim.hardware.keyboard.keyDown(D);
+		sim.hardware.keyboard.keyUp(D);
+		await stepsUntilStore(sim);
+		const before = sim.hardware.keyboard.snapshot();
+		sim.hardware.keyboard.clear(); // focus loss: queues and latches are dropped
+		sim.stepBack();
+		sim.stepBack();
+		expect(sim.hardware.keyboard.events).toEqual(before.events);
+		expect(sim.hardware.keyboard.snapshot().input).toEqual(before.input);
+		expect(sim.hardware.keyboard.pressed).toEqual([]);
+	});
+	test('reset after rewinding clears everything including held keys', async () => {
+		const sim = program(code);
+		sim.configureHardware(true, false);
+		sim.hardware.keyboard.keyDown(D);
+		await stepsUntilStore(sim);
+		sim.stepBack();
+		sim.resetRegisters();
+		expect(sim.hardware.keyboard.pressed).toEqual([]);
+		expect(sim.hardware.keyboard.events).toEqual([]);
+	});
+});

@@ -152,7 +152,8 @@ export class ExtendedHardware {
 	}
 
 	restore(snapshot: HardwareSnapshot) {
-		this.keyboard.restore(snapshot.keyboard);
+		// Held keys are the live physical state, not part of the CPU history.
+		this.keyboard.restore(snapshot.keyboard, true);
 		this._period = snapshot.period;
 		this._count = snapshot.count;
 		this.phase = snapshot.phase;

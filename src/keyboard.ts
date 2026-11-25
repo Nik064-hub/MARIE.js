@@ -257,13 +257,21 @@ export class KeyboardController {
 		};
 	}
 
-	restore(snapshot: KeyboardSnapshot): void {
+	/**
+	 * Restores the snapshot by value.
+	 *
+	 * Rewinding the CPU must not rewrite what the user's fingers are doing now,
+	 * so `keepPhysical` leaves the held keys (and AltGr state) untouched while
+	 * the device registers and pending queues return to their historical value.
+	 */
+	restore(snapshot: KeyboardSnapshot, keepPhysical = false): void {
 		this.inputQueue = [...snapshot.input];
 		this.eventQueue = snapshot.events.map((event) => ({ ...event }));
-		this.down = new Set(snapshot.pressed);
 		this.released = new Set(snapshot.released);
 		this.select = snapshot.select;
 		this.overflow = snapshot.overflow;
+		if (keepPhysical) return;
+		this.down = new Set(snapshot.pressed);
 		this.altGraph = snapshot.altGraph;
 	}
 
